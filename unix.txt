@@ -1,0 +1,224 @@
+Dev and QA:
+ssh -i ~/.ssh/sshkey jturck@10.104.3.98
+ sudo -u app_etl bash -i
+
+Jump box:
+https://52.72.249.28 - IE
+ssh -i ~/.ssh/sshkey jturck@127.0.0.1
+
+Production:
+Ht040109!
+
+ sudo -u app_etl bash -i
+port: 5050
+
+Stage:
+port:5000
+
+
+BACKGROUND
+
+nohup ./wosb_driver.ksh DOCFILEUPLOADTBL > wosb_driver_DOCFILEUPLOADTBL.out 2>&1&
+
+nohup ./etl_driver.ksh  > etl_driver.out 2>&1&
+
+
+
+{ time ls > /dev/null 2>&1 ; } 2> out.txt
+
+{ time ./wosb_docs.ksh > /dev/null 2>&1 ; } 2> wosb_docs_time.out.txt
+
+
+
+if [ -f ~/.kshrc ]; then
+        . ~/.profile
+        . ~/.kshrc
+fi
+
+-----------
+PULL DATE 
+'01-SEP-2011'
+
+git commit -a -m "Added pull paramater for selecteing the wosb records to pull in. DAte to be provided by Mary for production run."
+
+
+
+
+other commands
+Simply, delete all of the the carriage returns using a simple script: tr -d '\r' < datafile.
+
+To remove the last characher of each line in a file
+ sed 's/.$//' file
+
+Looking for a solution to the NULL with the postgresql copy comand issue:
+
+The empty string ("") isn't a valid timestamp, and COPY doesn't appear to offer a FORCE NULL or FORCE EMPTY TO NULL mode; 
+it has the reverse, FORCE NOT NULL, but that won't do what you want.
+
+You probably need to COPY the data into a table with a text field for the timestamp, probably an UNLOGGED or TEMPORARY table, 
+then use an INSERT INTO real_table SELECT col1, col, col3, NULLIF(tscol,'') FROM temp_table;.
+
+COPY should accept true and false as booleans, so you shouldn't have any issues there.
+
+Alternately, read the CSV with a simple Python script and the csv module, and then use psycopg2 to COPY rows into Pg. 
+Or just write new cleaned up CSV out and feed that into COPY. 
+Or use an ETL tool that does data transforms like Pentaho Kettle or Talend.
+
+
+\copy sbaone.organizations (duns_number,tax_identifier,tax_identifier_type, folder_name) to '/home/jturck/sbaone/SBAONE_RUN/extract_orgs.out'
+
+# Prints ,"
+#cat WOSB_DOCS/$1 |awk -F"|" '{print ",\""}'
+# prints ","
+#cat WOSB_DOCS/$1 |awk -F"|" '{print "\",\""}'
+# prints ",
+cat WOSB_DOCS/$1 |awk -F"|" '{print "\"," }'
+
+
+
+
+----------------------
+CURRENDIR=/home/anupl/sri
+
+cd $CURRENDIR
+rm $CURRENDIR/zipfiles 2>/dev/null
+
+ls -1 *.zip
+if [ $? -eq 0 ]
+then
+echo ".zip file found"
+ls -1 $CURRENDIR/*.zip > $CURRENDIR/zipfiles
+for i in `cat $CURRENDIR/zipfiles`+
+
+
+do
+unzip $i
+done
+fi
+if [ $? -eq 1 ]
+then
+echo "NOT found"
+
+for zip in *.zip; do
+    zip_filename="${zip%%.*}"
+    unzip "${zip}" -d "${zip_filename}-dir"
+
+    for file in "${zip_filename}-dir"/*.*; do
+        extension="${file##*.}"         
+        new_name="${zip_filename}.${extension}"
+        mv "${file}" "${new_name}"
+    done
+
+    rmdir "${zip_filename}-dir"
+    # delete the zip file
+    # rm "${zip}"
+done
+The script basically just unzips the files to a new temporary directory, 
+it then renames all the files in the new directory and moves them out of the directory, and finally it deletes the temporary directory.
+fi
+-----
+-- Sequence: sbaone.organizations_id_seq
+
+-- DROP SEQUENCE sbaone.organizations_id_seq;
+
+CREATE SEQUENCE sbaone.organizations_id_seq
+  INCREMENT 1
+  MINVALUE 1
+  MAXVALUE 9223372036854775807
+  START 14
+  CACHE 1;
+ALTER TABLE sbaone.organizations_id_seq
+  OWNER TO jturck;
+
+
+--------------
+cat extract_folders.out |awk '{print aws s3 cp s3://dev-dm-staging/WOSB_ARCHIVE/WOSB_ARCHIVE/"
+
+\copy (select o.folder_name, r.docdata, r.docdata_pdf from etl.organizations o, etl.select_recs r where o.id = r.organization_id)  to '/home/jturck/etl/etl_run/extract_folders.out'
+
+
+cat ${ETL_RUN}/extract_folders.out |awk '{print "mkdir -m 776 "$1}' |sort |uniq > ${ETL_DOCS}/make_dir.sh
+
+----------------------
+if [[ ! -d export.ldr ]]; then
+   mkdir -m 776 export.ldr
+fi
+--------------------
+
+ aws s3 ls s3://sba-docs-dev > count_folders_3s.out
+cat count_folders_3s.out |awk '{print $2}' |sed 's/\///'
+
+cat count_folders_3s.out |grep PRE |awk '{print $2}' |sed 's/\///' > folders_list.txt
+
+
+00018643c11f91679039083474585326
+
+aws s3 ls s3://sba-docs-dev/00018643c11f91679039083474585326/ --recursive |wc -l
+
+-----
+DOCFILEUPLOADTBL_DATA_TABLEcc746358-0152-1000-abb0-a56e230ba174.ldr
+DOCFILEUPLOADTBL_DATA_TABLEcc746358-0152-1000-abb0-a56e230ba174.ldr
+DOCFILEUPLOADTBL_DATA_TABLEcc746358-0152-1000-abb0-a56e230ba174.ldr
+
+
+
+----------- 3/9 errors
+
+psql:/opt/home/app_etl/prod/datateam/wosb/wosb/wosb_run/insert_DOCFILEUPLOADTBL.sql:1: ERROR:  invalid byte sequence for encoding "UTF8": 0xe9 0x42 0x6f
+CONTEXT:  COPY docfileuploadtbl, line 20890
+line 79584
+line 106876
+line 108219
+
+FIX:
+cat 1 |sed 's/ñ/n/'  |sed 's/é/e/'> 2
+
+13186|DOCFILEUPLOADTBL_DATA_TABLE3fae573c-0153-1000-b194-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:08
+13187|DOCFILEUPLOADTBL_DATA_TABLE3fae57d8-0153-1000-b195-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:33
+13188|DOCFILEUPLOADTBL_DATA_TABLE3fae5a19-0153-1000-b196-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:41
+13189|DOCFILEUPLOADTBL_DATA_TABLE3fae5a48-0153-1000-b197-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:45
+13190|DOCFILEUPLOADTBL_DATA_TABLE3fae5a87-0153-1000-b198-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:47
+13191|DOCFILEUPLOADTBL_DATA_TABLE3fae5a96-0153-1000-b199-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:52
+13192|DOCFILEUPLOADTBL_DATA_TABLE3fae5b03-0153-1000-b19a-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:55
+13193|DOCFILEUPLOADTBL_DATA_TABLE3fae5b32-0153-1000-b19b-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:54:59
+13194|DOCFILEUPLOADTBL_DATA_TABLE3fae5b71-0153-1000-b19c-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:55:01
+13195|DOCFILEUPLOADTBL_DATA_TABLE3fae5c7a-0153-1000-b19d-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:55:03
+13196|DOCFILEUPLOADTBL_DATA_TABLE3fae5c89-0153-1000-b19e-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:55:09
+13197|DOCFILEUPLOADTBL_DATA_TABLE3fae5d83-0153-1000-b19f-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:55:15
+13198|DOCFILEUPLOADTBL_DATA_TABLE3fae5dd1-0153-1000-b1a0-a56e230bf287.ldr|Mousel-Nuñez, Leslie |adelante1      |2011-04-22 15:55:21
+
+26145|DOCFILEUPLOADTBL_DATA_TABLE3fc3a93c-0153-1000-91a7-a56e230bf287.ldr|WALLACE, DéBorah |dwallhrm       |2011-07-05 14:02:04
+26146|DOCFILEUPLOADTBL_DATA_TABLE3fc3a999-0153-1000-91a8-a56e230bf287.ldr|WALLACE, DéBorah |dwallhrm       |2011-07-05 14:02:20
+26147|DOCFILEUPLOADTBL_DATA_TABLE3fc3a9d8-0153-1000-91a9-a56e230bf287.ldr|WALLACE, DéBorah |dwallhrm       |2011-07-05 14:02:38
+26148|DOCFILEUPLOADTBL_DATA_TABLE3fc3a9f7-0153-1000-91aa-a56e230bf287.ldr|WALLACE, DéBorah |dwallhrm       |2011-07-05 14:02:51
+26149|DOCFILEUPLOADTBL_DATA_TABLE3fc3aa16-0153-1000-91ab-a56e230bf287.ldr|WALLACE, DéBorah |dwallhrm       |2011-07-05 14:02:53
+116144|DOCFILEUPLOADTBL_DATA_TABLE409ec122-0153-1000-9fb3-a56e230bf287.ldr|Tiscareño-Sato, Graciela |Graciela2014   |2014-09-24 03:20:04
+116145|DOCFILEUPLOADTBL_DATA_TABLE409ec1fc-0153-1000-9fb4-a56e230bf287.ldr|Tiscareño-Sato, Graciela |Graciela2014   |2014-09-24 03:20:22
+116146|DOCFILEUPLOADTBL_DATA_TABLE409ec305-0153-1000-9fb5-a56e230bf287.ldr|Tiscareño-Sato, Graciela |Graciela2014   |2014-09-24 03:20:28
+116179|DOCFILEUPLOADTBL_DATA_TABLE40a445ce-0153-1000-a821-a56e230bf287.ldr|Tiscareño-Sato, Graciela |Graciela2014   |2014-09-24 15:23:01
+26329|DOCFILEUPLOADTBL_DATA_TABLE3fcd414a-0153-1000-9ee3-a56e230bf287.ldr|WALLACE, DéBorah |dwallhrm       |2011-07-06 13:36:15
+
+
+manually fixed:
+ 86696|DOCFILEUPLOADTBL_DATA_TABLE404d0628-0153-1000-b6f3-a56e230bf287.ldr|"O<92>Donnell, Valerie "|"Progressive1   "|2013-08-07 10:04:24|
+113161|DOCFILEUPLOADTBL_DATA_TABLE40a00840-0153-1000-a192-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:55:33
+113162|DOCFILEUPLOADTBL_DATA_TABLE40a3ea27-0153-1000-a784-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:57:27
+113151|DOCFILEUPLOADTBL_DATA_TABLE40a51ccb-0153-1000-a927-a56e230bf287.ldr|ODonnell, Valerie |Progressive1   |2014-08-13 16:44:06
+ 113152|DOCFILEUPLOADTBL_DATA_TABLE40a5210f-0153-1000-a928-a56e230bf287.ldr|ODonnell, Valerie |Progressive1   |2014-08-13 16:44:13
+ 113154|DOCFILEUPLOADTBL_DATA_TABLE40a5211f-0153-1000-a929-a56e230bf287.ldr|ODonnell, Valerie |Progressive1   |2014-08-13 16:44:15
+ 113156|DOCFILEUPLOADTBL_DATA_TABLE40a5214e-0153-1000-a92a-a56e230bf287.ldr|ODonnell, Valerie |Progressive1   |2014-08-13 16:55:21
+ 113158|DOCFILEUPLOADTBL_DATA_TABLE40a5214e-0153-1000-a92b-a56e230bf287.ldr|ODonnell, Valerie |Progressive1   |2014-08-13 16:55:24
+113005|DOCFILEUPLOADTBL_DATA_TABLE40a99fbc-0153-1000-ae52-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-12 12:21:58
+112985|DOCFILEUPLOADTBL_DATA_TABLE40aaa1a7-0153-1000-affe-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-12 12:12:11
+ 113003|DOCFILEUPLOADTBL_DATA_TABLE40ab0428-0153-1000-b09e-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-12 12:19:04
+ 113004|DOCFILEUPLOADTBL_DATA_TABLE40ab0946-0153-1000-b09f-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-12 12:21:13
+ 113006|DOCFILEUPLOADTBL_DATA_TABLE40ab0b48-0153-1000-b0a0-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-12 12:23:56
+113150|DOCFILEUPLOADTBL_DATA_TABLE40a360bd-0153-1000-a6d1-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:43:50
+ 113153|DOCFILEUPLOADTBL_DATA_TABLE40a364c2-0153-1000-a6d2-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:44:14
+ 113155|DOCFILEUPLOADTBL_DATA_TABLE40a364d2-0153-1000-a6d3-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:55:20
+ 113157|DOCFILEUPLOADTBL_DATA_TABLE40a36510-0153-1000-a6d4-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:55:23
+ 113160|DOCFILEUPLOADTBL_DATA_TABLE40a365cb-0153-1000-a6d5-a56e230bf287.ldr|O<92>Donnell, Valerie |Progressive1   |2014-08-13 16:55:26
+
+
+---- from the original file:
+
